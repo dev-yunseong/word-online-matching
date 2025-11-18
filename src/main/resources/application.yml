@@ -1,0 +1,19 @@
+server:
+  port: ${PORT}
+
+spring:
+  application:
+    name: word-online-matching
+  config:
+    import: optional:file:.env[.properties]
+  r2dbc:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  sql:
+    init:
+      mode: never
+
+jwt:
+  access-private-key: ${JWT_PRIVATE_KEY}
+  access-public-key: ${JWT_PUBLIC_KEY}
