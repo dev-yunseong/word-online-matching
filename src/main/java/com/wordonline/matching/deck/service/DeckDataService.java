@@ -64,7 +64,7 @@ public class DeckDataService {
     @Transactional(readOnly = true)
     public Mono<CardsDto> getCardsDto(DeckCard deckCard) {
         return getCardDtoMap()
-                .map(map -> map.get(deckCard.getId()))
+                .map(map -> map.get(deckCard.getCardId()))
                 .map(cardDto -> new CardsDto(cardDto, deckCard.getCount()));
     }
 }

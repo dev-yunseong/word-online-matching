@@ -100,8 +100,9 @@ public class DeckService {
                         return Mono.error(new IllegalArgumentException("Invalid deck"));
                     }
                     return deckRepository.save(deck)
-                            .flatMap(savedDeck -> saveCardsToDeck(userId, deckRequestDto))
-                            .then(getDeck(deck.getId()));
+                            .flatMap(savedDeck -> saveCardsToDeck(savedDeck.getId(), deckRequestDto)
+                                    .thenReturn(savedDeck))
+                            .flatMap(savedDeck -> getDeck(savedDeck.getId()));
                 });
     }
 
