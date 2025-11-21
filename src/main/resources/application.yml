@@ -14,6 +14,19 @@ spring:
     init:
       mode: never
 
+#logging:
+#  level:
+#    org.springframework:
+#      DEBUG
+
+team6515:
+  server:
+    account:
+      url: ${ACCOUNT_SERVER_URL}
+    game:
+      url: ${GAME_SERVER_URL}
+
+
 jwt:
   access-private-key: ${JWT_PRIVATE_KEY}
   access-public-key: ${JWT_PUBLIC_KEY}

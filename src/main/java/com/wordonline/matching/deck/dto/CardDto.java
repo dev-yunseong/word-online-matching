@@ -14,5 +14,9 @@ public record CardDto(
     public CardDto(Card card) {
         this(card.getId(), card.getName(), card.getCardType());
     }
+
+    public CardDto(CardsDto cardsDto) {
+        this(cardsDto.getId(), cardsDto.getName(), cardsDto.getType());
+    }
 }
 

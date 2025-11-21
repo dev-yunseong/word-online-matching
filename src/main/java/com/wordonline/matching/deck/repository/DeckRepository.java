@@ -18,5 +18,5 @@ UPDATE decks
 SET name = :newName
 WHERE id = :deckId;
 """)
-    Mono<Void> updateDeckName(@Param("deckId") Long deckId, @Param("newName") String newName);
+    Mono<Long> updateDeckName(@Param("deckId") Long deckId, @Param("newName") String newName);
 }

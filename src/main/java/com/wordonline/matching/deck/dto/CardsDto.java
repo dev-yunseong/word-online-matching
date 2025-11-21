@@ -14,4 +14,8 @@ public class CardsDto {
     public CardsDto(long id, CardType cardType, int count) {
         this(id, cardType, cardType.getType(), count);
     }
+
+    public CardsDto(CardDto cardDto, int count) {
+        this(cardDto.id(), cardDto.name(), cardDto.type(), count);
+    }
 }

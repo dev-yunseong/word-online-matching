@@ -2,26 +2,20 @@ package com.wordonline.matching.deck.service;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.i18n.LocaleContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.wordonline.matching.auth.domain.User;
 import com.wordonline.matching.auth.repository.UserRepository;
-import com.wordonline.matching.deck.domain.Card;
 import com.wordonline.matching.deck.domain.Deck;
 import com.wordonline.matching.deck.domain.DeckCard;
 import com.wordonline.matching.deck.domain.UserCard;
 import com.wordonline.matching.deck.dto.CardDto;
 import com.wordonline.matching.deck.dto.CardPoolDto;
+import com.wordonline.matching.deck.dto.CardsDto;
 import com.wordonline.matching.deck.dto.DeckCardDto;
 import com.wordonline.matching.deck.dto.DeckRequestDto;
 import com.wordonline.matching.deck.dto.DeckResponseDto;
@@ -29,13 +23,13 @@ import com.wordonline.matching.deck.repository.CardRepository;
 import com.wordonline.matching.deck.repository.DeckCardRepository;
 import com.wordonline.matching.deck.repository.DeckRepository;
 import com.wordonline.matching.deck.repository.UserCardRepository;
+import com.wordonline.matching.deck.validation.DeckValidator;
 import com.wordonline.matching.service.LocalizationService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuples;
 
 @Slf4j
 @Service
@@ -43,12 +37,13 @@ import reactor.util.function.Tuples;
 @RequiredArgsConstructor
 public class DeckService {
 
+    private final DeckValidator deckValidator;
     private final UserRepository userRepository;
     private final DeckRepository deckRepository;
     private final LocalizationService localizationService;
-    private final CardRepository cardRepository;
     private final UserCardRepository userCardRepository;
     private final DeckCardRepository deckCardRepository;
+    private final DeckDataService deckDataService;
 
     public Mono<Long> initializeCard(long userId) {
         return giveAllCard(userId).then(
@@ -67,7 +62,8 @@ public class DeckService {
     }
 
     private Mono<Void> giveAllCard(long userId) {
-        return Flux.fromStream(getAllCard().stream())
+        return deckDataService.getAllCard()
+                .flatMapMany(Flux::fromIterable)
                 .flatMap(card -> {
                     UserCard userCard = new UserCard(userId, card.getId(), 3);
                     return userCardRepository.save(userCard);
@@ -81,65 +77,50 @@ public class DeckService {
                 .map(user -> user.getSelectedDeckId() != null);
     }
 
-    @Cacheable("cards")
-    @Transactional(readOnly = true)
-    public List<Card> getAllCard() {
-        return cardRepository.findAll()
-                .collectList()
-                .block();
-    }
-
-    @Cacheable("cardsMap")
-    @Transactional(readOnly = true)
-    public Map<Long, CardDto> getCardDtoMap() {
-        return getAllCard()
-                .stream()
-                .collect(Collectors.toMap(
-                        Card::getId,
-                        card -> getCardDto(card.getId())
-                ));
-    }
-
-    @Cacheable("cardDto")
-    @Transactional(readOnly = true)
-    public CardDto getCardDto(long cardId) {
-        return cardRepository.findById(cardId)
-                .map(CardDto::new)
-                .block();
-    }
-
     @Transactional(readOnly = true)
     public Flux<DeckResponseDto> getDecks(long userId){
         return deckRepository.findAllByUserId(userId)
             .flatMap(deck -> deckCardRepository.findAllByDeckId(deck.getId())
                     .flatMap(deckCard -> Flux.range(0, deckCard.getCount()).map(i -> deckCard.getCardId()))
                     .collectList()
-                    .map(cardIds ->
+                    .flatMap(cardIds-> Flux.fromIterable(cardIds).flatMap(deckDataService::getCardDto).collectList())
+                    .map(cardDtos ->
                         new DeckResponseDto(
                                 deck.getId(),
                                 deck.getName(),
-                                cardIds.stream()
-                                        .map(this::getCardDto)
-                                        .toList())));
+                                cardDtos))
+            );
     }
 
     public Mono<DeckResponseDto> saveDeck(long userId, DeckRequestDto deckRequestDto) {
         Deck deck = new Deck(userId, deckRequestDto.name());
-        return deckRepository.save(deck)
-                .flatMap(savedDeck -> saveCardsToDeck(userId, deckRequestDto))
-                .then(getDeck(deck.getId()));
+        return deckValidator.isValid(deckRequestDto.cardIds())
+                .flatMap(isValid -> {
+                    if (!isValid) {
+                        return Mono.error(new IllegalArgumentException("Invalid deck"));
+                    }
+                    return deckRepository.save(deck)
+                            .flatMap(savedDeck -> saveCardsToDeck(userId, deckRequestDto))
+                            .then(getDeck(deck.getId()));
+                });
     }
 
     public Mono<DeckResponseDto> updateDeck(long userId, long deckId, DeckRequestDto deckRequestDto) {
-        return findDeck(deckId, userId)
-                .flatMap(deck ->
-                        // 기존 카드 삭제
-                        deckCardRepository.deleteByDeckId(deckId)
-                                .then(deckRepository.updateDeckName(deckId, deckRequestDto.name()))
-                                .then(saveCardsToDeck(deckId, deckRequestDto))
-                                .then(Mono.just(deckId))
-                )
-                .flatMap(this::getDeck);
+        return deckValidator.isValid(deckRequestDto.cardIds())
+                .flatMap(isValid -> {
+                    if (!isValid) {
+                        return Mono.error(new IllegalArgumentException("Invalid deck"));
+                    }
+                    return findDeck(deckId, userId)
+                            .flatMap(deck ->
+                                    // 기존 카드 삭제
+                                    deckCardRepository.deleteByDeckId(deckId)
+                                            .then(deckRepository.updateDeckName(deckId, deckRequestDto.name()))
+                                            .then(saveCardsToDeck(deckId, deckRequestDto))
+                                            .then(Mono.just(deckId))
+                            )
+                            .flatMap(this::getDeck);
+                });
     }
 
     private Mono<Void> saveCardsToDeck(long deckId, DeckRequestDto deckRequestDto) {
@@ -178,7 +159,8 @@ public class DeckService {
 
     public Mono<Void> selectDeck(long userId, long deckId) {
         return findDeck(deckId, userId)
-                .flatMap(deck -> userRepository.updateSelectedDeck(userId, deck.getId()));
+                .flatMap(deck -> userRepository.updateSelectedDeck(userId, deck.getId()))
+                .then();
     }
 
 
@@ -187,7 +169,8 @@ public class DeckService {
         return deckRepository.findById(deckId)
                 .flatMapMany(deck ->
                     deckCardRepository.findAllByDeckId(deckId)
-                            .map(deckCard -> new DeckCardDto(deck, getCardDto(deckCard.getCardId()), deckCard.getCount())))
+                            .flatMap(deckDataService::getCardsDto)
+                            .map(cardsDto -> new DeckCardDto(deck, new CardDto(cardsDto), cardsDto.getCount())))
                 .collectList()
                 .map(DeckResponseDto::new);
     }
@@ -195,11 +178,12 @@ public class DeckService {
     @Transactional(readOnly = true)
     public Mono<CardPoolDto> getCardPool(long userId) {
         return userCardRepository.findAllByUserId(userId)
+                .flatMap(deckDataService::getCardsDto)
                 .collectList()
-                .map(userCards -> userCards.stream()
-                    .flatMap(userCard ->
-                            Stream.generate(() -> getCardDto(userCard.getCardId()))
-                                    .limit(userCard.getCount())
+                .map(cardsDtos -> cardsDtos.stream()
+                    .flatMap(cardsDto ->
+                            Stream.generate(() -> new CardDto(cardsDto))
+                                    .limit(cardsDto.getCount())
                     ).toList())
                 .map(CardPoolDto::new);
     }
