@@ -13,7 +13,7 @@ public interface UserRepository extends R2dbcRepository<User, Long> {
     @Query("""
 UPDATE users
 SET selected_deck_id = :deckId
-WHERE member_id = :userId;
+WHERE id = :userId;
 """)
-    Mono<Void> updateSelectedDeck(@Param("userId") Long userId, @Param("deckId") Long deckId);
+    Mono<Long> updateSelectedDeck(@Param("userId") Long userId, @Param("deckId") Long deckId);
 }

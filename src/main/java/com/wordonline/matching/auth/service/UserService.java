@@ -1,7 +1,5 @@
 package com.wordonline.matching.auth.service;
 
-import java.util.Locale;
-
 import org.springframework.context.i18n.LocaleContext;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.stereotype.Service;
@@ -14,13 +12,14 @@ import com.wordonline.matching.auth.dto.UserResponseDto;
 import com.wordonline.matching.auth.repository.UserRepository;
 import com.wordonline.matching.deck.service.DeckService;
 import com.wordonline.matching.matching.client.AccountClient;
-import com.wordonline.matching.matching.dto.AccountMemberResponseDto;
 import com.wordonline.matching.service.LocalizationService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuples;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -36,6 +35,7 @@ public class UserService {
         return userRepository.save(user)
                 .onErrorResume(e ->
                     Mono.deferContextual(ctx -> {
+                        log.error("Error in initial user", e);
                         LocaleContext localeContext = ctx.get(LocaleContext.class);
                         String message = localizationService.getMessage(localeContext, "error.register.failed");
                         return Mono.error(
@@ -69,11 +69,12 @@ public class UserService {
 
     private Mono<User> findUserDomain(long userId) {
         return userRepository.findById(userId)
-                .onErrorResume(e -> throwAuthorizationDeniedException(userId));
+                .onErrorResume(e -> throwAuthorizationDeniedException(userId, e));
     }
 
-    private Mono<User> throwAuthorizationDeniedException(long userId) {
+    private Mono<User> throwAuthorizationDeniedException(long userId, Throwable e) {
         return Mono.deferContextual(ctx -> {
+            log.error("Error in initial user", e);
             LocaleContext localeContext = ctx.get(LocaleContext.class);
             return Mono.error(
                     new AuthorizationDeniedException(
@@ -93,6 +94,10 @@ public class UserService {
     }
 
     public Mono<Void> markPlaying(long userId) {
+        if (userId < 0){
+            return Mono.empty();
+        }
+
         return findUserDomain(userId)
                 .flatMap(user -> {
                     user.markPlaying();
@@ -101,6 +106,10 @@ public class UserService {
     }
 
     public Mono<Void> markOnline(long userId) {
+        if (userId < 0){
+            return Mono.empty();
+        }
+
         return findUserDomain(userId)
                 .flatMap(user -> {
                     user.markOnline();
@@ -109,6 +118,10 @@ public class UserService {
     }
 
     public Mono<UserStatus> getStatus(long userId) {
+        if (userId < 0){
+            return Mono.empty();
+        }
+
         return findUserDomain(userId)
                 .map(User::getStatus);
     }

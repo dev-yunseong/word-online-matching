@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 @RequestMapping("/api/users")
-@PreAuthorize("isAuthenticated()")
 @Slf4j
 @RestController
 @RequiredArgsConstructor
