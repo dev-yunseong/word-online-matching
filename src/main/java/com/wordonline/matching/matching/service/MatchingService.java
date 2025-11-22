@@ -17,6 +17,7 @@ import com.wordonline.matching.deck.service.DeckService;
 import com.wordonline.matching.auth.service.UserService;
 import com.wordonline.matching.matching.dto.SessionDto;
 import com.wordonline.matching.matching.dto.SimpleMessageDto;
+import com.wordonline.matching.session.service.GameSessionService;
 
 @Slf4j
 @Component

@@ -1,6 +1,7 @@
 package com.wordonline.matching.matching.dto;
 
 import com.wordonline.matching.auth.dto.UserDetailResponseDto;
+import com.wordonline.matching.session.domain.SessionRecoveryInfo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,4 +15,14 @@ public class MatchedInfoDto{
     private UserDetailResponseDto leftUser;
     private UserDetailResponseDto rightUser;
     private String sessionId;
+
+    public MatchedInfoDto(SessionRecoveryInfo sessionInfo, UserDetailResponseDto leftUser, UserDetailResponseDto rightUser) {
+        this(
+                "Successfully Match Info Recovered",
+                sessionInfo.serverUrl(),
+                leftUser,
+                rightUser,
+                sessionInfo.sessionId()
+        );
+    }
 }
