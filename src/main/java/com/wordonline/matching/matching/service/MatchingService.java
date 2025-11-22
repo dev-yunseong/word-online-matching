@@ -102,10 +102,16 @@ public class MatchingService {
         return serverEventService.unsubscribe(id);
     }
 
-    public Mono<Boolean> tryMatching() {
-        return Mono.fromCallable(this::tryMatchUsers)
-                .subscribeOn(Schedulers.single())
-                .flatMap(booleanMono -> booleanMono);
+    public Mono<Void> tryMatching() {
+        int matchingNum = matchingQueue.size() / 2;
+        return Flux.range(0, matchingNum)
+                .flatMap(i -> tryMatchingOnSingleThread())
+                .then();
+    }
+
+    private Mono<Boolean> tryMatchingOnSingleThread() {
+        return tryMatchUsers()
+                .subscribeOn(Schedulers.single());
     }
 
     private Mono<Boolean> tryMatchUsers() {
