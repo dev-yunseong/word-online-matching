@@ -43,7 +43,7 @@ public class UserController {
     public Mono<Map<String, String>> getMyStatus(
             @AuthenticationPrincipal Jwt principalDetails
     ) {
-        return userService.getStatus(principalDetails.getClaim("memberID"))
+        return userService.getStatus(principalDetails.getClaim("memberId"))
                 .map(status -> Map.of("status", status.name()));
     }
 }

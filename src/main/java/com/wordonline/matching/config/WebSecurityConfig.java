@@ -100,9 +100,6 @@ public class WebSecurityConfig {
                 .authorizeExchange(exchange -> exchange
                                 .pathMatchers(
                                         "/healthcheck").permitAll()
-//                        .pathMatchers("/admin/**").hasRole("ADMIN")
-//                        .pathMatchers("/my-page/**").hasAuthority("ROLE_USER")
-
                                 .anyExchange().authenticated()
                 );
 

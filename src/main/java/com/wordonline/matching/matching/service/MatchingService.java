@@ -8,10 +8,10 @@ import reactor.core.scheduler.Schedulers;
 
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 import com.wordonline.matching.deck.service.DeckService;
 import com.wordonline.matching.auth.service.UserService;
@@ -24,7 +24,6 @@ import com.wordonline.matching.matching.dto.SimpleMessageDto;
 public class MatchingService {
 
     private final ServerEventService serverEventService;
-    private final ReentrantLock lock = new ReentrantLock();
     private final Queue<Long> matchingQueue = new ConcurrentLinkedQueue<>();
     private final static AtomicInteger sessionIdCounter = new AtomicInteger(1);
 
@@ -44,14 +43,34 @@ public class MatchingService {
         Flux<Object> userFlux = serverEventService.subscribe(userId);
 
         enqueue(userId)
-                .flatMap(isSuccess -> {
-                    if (isSuccess) {
-                        return serverEventService.send(userId, new SimpleMessageDto("Successfully Enqueued"));
-                    } else {
-                        return serverEventService.send(userId, new SimpleMessageDto("Failed to enqueue user"))
-                                .then(serverEventService.unsubscribe(userId));
-                    }
-                }).subscribe();
+                .flatMap(isSuccess ->
+                     Mono.delay(Duration.ofSeconds(1)).flatMap(i -> {
+                        if (isSuccess) {
+                            log.info("[Queue] Successfully Enqueued user id: {}", userId);
+                            return serverEventService.send(userId,
+                                    new SimpleMessageDto("Successfully Enqueued"));
+                        } else {
+                            log.info("[Queue] Failed to enqueue user id: {}", userId);
+                            return serverEventService.send(userId,
+                                            new SimpleMessageDto("Failed to enqueue user"))
+                                    .then(serverEventService.unsubscribe(userId));
+                        }
+                    }))
+                .subscribe();
+
+        return userFlux;
+    }
+
+    public Flux<Object> requestPractice(long userId) {
+        Flux<Object> userFlux = serverEventService.subscribe(userId);
+        matchingQueue.remove(userId);
+        Mono.empty()
+                .then(Mono.delay(Duration.ofSeconds(1)).flatMap(i -> {
+                            log.info("[Practice] Successfully Enqueued user id: {}", userId);
+                            return serverEventService.send(userId,
+                                    new SimpleMessageDto("Successfully Enqueued"));
+                }).then(matchPractice(userId)))
+                .subscribe();
 
         return userFlux;
     }
@@ -107,12 +126,16 @@ public class MatchingService {
     }
 
     public Mono<Boolean> matchPractice(long userId) {
-        return removeFromQueue(userId)
-                .then(createSession(
-                        sessionIdCounter.incrementAndGet(),
-                        userId,
-                        -1)
-                );
+        return Mono.empty()
+                .then(createSession(sessionIdCounter.incrementAndGet(), userId, -1))
+                .map(isSuccess -> {
+                    log.info("[Practice] Trying to create session {}", isSuccess);
+                    return isSuccess;
+                })
+                .onErrorResume(e -> {
+                    log.error("Failed to match practice", e);
+                    return Mono.just(false);
+                });
     }
 
     private Mono<Boolean> createSession(long sessionId, long uid1, long uid2) {
@@ -123,15 +146,23 @@ public class MatchingService {
                                 userService.markOnline(uid1),
                                 userService.markOnline(uid2))
                         .thenReturn(matchedInfoDto))
-                .flatMap(matchedInfoDto -> Mono.zip(
-                        serverEventService.send(uid1, matchedInfoDto),
-                        serverEventService.send(uid2, matchedInfoDto))
-                        .thenReturn(true))
-                .onErrorResume(e ->
-                        Mono.zip(
-                                userService.markOnline(uid1),
-                                userService.markOnline(uid2)
-                        ).thenReturn(false)
+                .flatMap(matchedInfoDto -> {
+                    log.info("[Session] Session created: {}, uid1: {}, uid2: {}", sessionId, uid1, uid2);
+                    return Mono.zip(
+                                    serverEventService.send(uid1, matchedInfoDto),
+                                    serverEventService.send(uid2, matchedInfoDto))
+                            .map(tuple -> {
+                                log.info("[Session] Session created: uid1: {}, uid2: {}", tuple.getT1(),  tuple.getT2());
+                                return 0;
+                            }).thenReturn(true);
+                })
+                .onErrorResume(e -> {
+                            log.error("Failed to create session", e);
+                            return Mono.zip(
+                                    userService.markOnline(uid1),
+                                    userService.markOnline(uid2)
+                            ).thenReturn(false);
+                        }
                 );
     }
 

@@ -59,8 +59,10 @@ public class UserService {
 
     public Mono<UserDetailResponseDto> getUserDetail(long memberId) {
         return accountClient.getMember(memberId)
-                .map(accountMemberResponseDto ->
-                        new UserDetailResponseDto(memberId, accountMemberResponseDto));
+                .map(accountMemberResponseDto -> {
+                    log.info(accountMemberResponseDto.toString());
+                    return new UserDetailResponseDto(memberId, accountMemberResponseDto);
+                });
     }
 
     public Mono<Void> deleteUser(long userId) {
@@ -86,11 +88,12 @@ public class UserService {
     }
 
     public Mono<Void> markMatching(long userId) {
-        return findUserDomain(userId)
-                .flatMap(user -> {
-                    user.markOnline();
-                    return userRepository.save(user);
-                }).then();
+        if (userId < 0) {
+            return Mono.empty();
+        }
+
+        return userRepository.updateStatus(userId, UserStatus.OnMatching)
+                .then();
     }
 
     public Mono<Void> markPlaying(long userId) {
@@ -98,23 +101,17 @@ public class UserService {
             return Mono.empty();
         }
 
-        return findUserDomain(userId)
-                .flatMap(user -> {
-                    user.markPlaying();
-                    return userRepository.save(user);
-                }).then();
+        return userRepository.updateStatus(userId, UserStatus.OnPlaying)
+                .then();
     }
 
     public Mono<Void> markOnline(long userId) {
         if (userId < 0){
-            return Mono.empty();
+            return Mono.just(0).then();
         }
 
-        return findUserDomain(userId)
-                .flatMap(user -> {
-                    user.markOnline();
-                    return userRepository.save(user);
-                }).then();
+        return userRepository.updateStatus(userId, UserStatus.Online)
+                .then();
     }
 
     public Mono<UserStatus> getStatus(long userId) {

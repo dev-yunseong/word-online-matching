@@ -11,8 +11,10 @@ import com.wordonline.matching.matching.dto.MatchedInfoDto;
 import com.wordonline.matching.matching.dto.SessionDto;
 import com.wordonline.matching.service.LocalizationService;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 public class GameSessionService {
 
@@ -36,10 +38,12 @@ public class GameSessionService {
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(Boolean.class)
+                .doOnNext(isSuccess -> log.info("Response from game server: {}", isSuccess))
                 .flatMap(isSuccess -> {
                         if (!isSuccess) {
                             return getException();
                         }
+                        log.info("Session Created");
                         return Mono.zip(
                                 userService.getUserDetail(sessionDto.uid1()),
                                 userService.getUserDetail(sessionDto.uid2())

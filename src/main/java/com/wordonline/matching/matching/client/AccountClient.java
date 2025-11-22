@@ -14,8 +14,10 @@ import com.wordonline.matching.auth.domain.User;
 import com.wordonline.matching.matching.dto.AccountMemberResponseDto;
 import com.wordonline.matching.service.LocalizationService;
 
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 public class AccountClient {
 
@@ -31,10 +33,17 @@ public class AccountClient {
     }
 
     public Mono<AccountMemberResponseDto> getMember(long memberId) {
-         return webClient.get().uri("/api/members/" + memberId)
-                 .retrieve()
-                 .onStatus(httpStatusCode -> httpStatusCode != HttpStatus.OK, clientResponse -> getException())
-                 .bodyToMono(AccountMemberResponseDto.class);
+        if (memberId <= 0) {
+            return Mono.just(new AccountMemberResponseDto("bot@team6515.com", "bot"));
+        }
+
+        return webClient.get().uri("/api/members/" + memberId)
+             .retrieve()
+             .onStatus(httpStatusCode -> {
+                 log.info("[Account Client] Status Code : " + httpStatusCode);
+                 return httpStatusCode != HttpStatus.OK;
+             }, clientResponse -> getException())
+             .bodyToMono(AccountMemberResponseDto.class);
     }
 
     private Mono<Throwable> getException() {

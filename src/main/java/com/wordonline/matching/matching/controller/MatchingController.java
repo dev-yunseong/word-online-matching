@@ -4,10 +4,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.wordonline.matching.matching.dto.QueueLengthResponseDto;
 import com.wordonline.matching.matching.service.MatchingService;
@@ -18,23 +18,26 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
-@Controller
+@RestController
 @RequiredArgsConstructor
 public class MatchingController {
 
     private final MatchingService matchingService;
 
-    // matching queue request
-    @GetMapping(value = "/game/match/queue", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(value = "/api/match/queue/me", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<Object> queueMatching(@AuthenticationPrincipal Jwt principalDetails) {
-
         log.info("[Queue] User queued for matching; userId: {}", principalDetails.getClaim("memberId").toString());
         Long memberId = principalDetails.getClaim("memberId");
         return matchingService.requestMatching(memberId);
     }
 
-    @ResponseBody
-    @GetMapping("/api/match/queue/me")
+    @GetMapping(value = "/api/match/practice/me", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<Object> matchPractice(@AuthenticationPrincipal Jwt principalDetails) {
+        Long memberId = principalDetails.getClaim("memberId");
+        return matchingService.requestPractice(memberId);
+    }
+
+    @GetMapping("/api/match/queue/me/exist")
     public Mono<ResponseEntity<Void>> isMeInQueue(@AuthenticationPrincipal Jwt principalDetails) {
         if (matchingService.isInQueue(principalDetails.getClaim("memberId"))) {
             return Mono.just(ResponseEntity.ok().build());

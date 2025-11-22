@@ -8,6 +8,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class MatchedInfoDto{
+    private final String type = "matchedInfoDto";
     private String message;
     private String server;
     private UserDetailResponseDto leftUser;
