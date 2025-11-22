@@ -150,8 +150,8 @@ public class MatchingService {
 
         return gameSessionService.createSession(sessionDto)
                 .flatMap(matchedInfoDto -> Mono.zip(
-                                userService.markOnline(uid1),
-                                userService.markOnline(uid2))
+                                userService.markPlaying(uid1),
+                                userService.markPlaying(uid2))
                         .thenReturn(matchedInfoDto))
                 .flatMap(matchedInfoDto -> {
                     log.info("[Session] Session created: {}, uid1: {}, uid2: {}", sessionId, uid1, uid2);

@@ -44,7 +44,8 @@ public class GameSessionService {
                 .body(Mono.just(sessionDto), SessionDto.class)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToMono(Boolean.class)
+                .bodyToMono(SimpleBooleanDto.class)
+                .map(SimpleBooleanDto::value)
                 .doOnNext(isSuccess -> log.info("Response from game server: {}", isSuccess))
                 .flatMap(isSuccess -> {
                         if (!isSuccess) {

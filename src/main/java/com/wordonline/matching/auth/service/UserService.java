@@ -31,8 +31,8 @@ public class UserService {
     private final LocalizationService localizationService;
 
     public Mono<User> initialUser(long memberId) {
-        User user = new User(memberId);
-        return userRepository.save(user)
+        return userRepository.insertUser(memberId)
+                .then(userRepository.findById(memberId))
                 .onErrorResume(e ->
                     Mono.deferContextual(ctx -> {
                         log.error("Error in initial user", e);
@@ -71,12 +71,11 @@ public class UserService {
 
     private Mono<User> findUserDomain(long userId) {
         return userRepository.findById(userId)
-                .onErrorResume(e -> throwAuthorizationDeniedException(userId, e));
+                .switchIfEmpty(throwAuthorizationDeniedException(userId));
     }
 
-    private Mono<User> throwAuthorizationDeniedException(long userId, Throwable e) {
+    private Mono<User> throwAuthorizationDeniedException(long userId) {
         return Mono.deferContextual(ctx -> {
-            log.error("Error in initial user", e);
             LocaleContext localeContext = ctx.get(LocaleContext.class);
             return Mono.error(
                     new AuthorizationDeniedException(

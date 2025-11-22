@@ -47,18 +47,7 @@ public class DeckService {
 
     public Mono<Long> initializeCard(long userId) {
         return giveAllCard(userId).then(
-            Mono.deferContextual(ctx -> {
-                LocaleContext localeContext = ctx.get(LocaleContext.class);
-                String defaultName = localizationService.getMessage(localeContext, "string.default.deck");
-                return Mono.just(new Deck(userId, defaultName));
-            })).flatMap(deckRepository::save)
-                .flatMap(deck -> Flux.range(1, 10)
-                            .flatMap(i -> {
-                                DeckCard deckCard = new DeckCard(deck.getId(), (long) i, 1);
-                                return deckCardRepository.save(deckCard);
-                            }).then(Mono.just(deck)))
-                .flatMap(deck -> userRepository.updateSelectedDeck(userId, deck.getId())
-                        .then(Mono.just(deck.getId())));
+                giveDefaultDeck(userId));
     }
 
     private Mono<Void> giveAllCard(long userId) {
@@ -90,6 +79,21 @@ public class DeckService {
                                 deck.getName(),
                                 cardDtos))
             );
+    }
+
+    private Mono<Long> giveDefaultDeck(long userId) {
+        return Mono.deferContextual(ctx -> {
+                    LocaleContext localeContext = ctx.get(LocaleContext.class);
+                    String defaultName = localizationService.getMessage(localeContext, "string.default.deck");
+                    return Mono.just(new Deck(userId, defaultName));
+                }).flatMap(deckRepository::save)
+                .flatMap(deck -> Flux.range(1, 10)
+                        .flatMap(i -> {
+                            DeckCard deckCard = new DeckCard(deck.getId(), (long) i, 1);
+                            return deckCardRepository.save(deckCard);
+                        }).then(Mono.just(deck)))
+                .flatMap(deck -> userRepository.updateSelectedDeck(userId, deck.getId())
+                        .then(Mono.just(deck.getId())));
     }
 
     public Mono<DeckResponseDto> saveDeck(long userId, DeckRequestDto deckRequestDto) {

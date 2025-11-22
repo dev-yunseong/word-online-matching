@@ -24,4 +24,10 @@ SET status = CAST(:status AS user_status)
 WHERE id = :userId;
 """)
     Mono<Long> updateStatus(@Param("userId") Long userId, @Param("status") UserStatus status);
+
+    @Query("""
+INSERT INTO users(id, status) VALUES
+                      (:userId, 'Online');
+""")
+    Mono<Long> insertUser(@Param("userId") Long userId);
 }

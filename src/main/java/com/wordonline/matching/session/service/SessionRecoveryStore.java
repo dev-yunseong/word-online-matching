@@ -24,7 +24,7 @@ public class SessionRecoveryStore {
     public void storeMatchInfo(MatchedInfoDto matchedInfoDto) {
         SessionRecoveryInfo sessionRecoveryInfo = new SessionRecoveryInfo(matchedInfoDto);
         storeMatchInfo(matchedInfoDto.getLeftUser().id(), sessionRecoveryInfo);
-        storeMatchInfo(matchedInfoDto.getLeftUser().id(), sessionRecoveryInfo);
+        storeMatchInfo(matchedInfoDto.getRightUser().id(), sessionRecoveryInfo);
     }
 
     private void storeMatchInfo(Long userId, SessionRecoveryInfo sessionRecoveryInfo) {
