@@ -99,15 +99,7 @@ public class WebSecurityConfig {
         http
                 .authorizeExchange(exchange -> exchange
                                 .pathMatchers(
-                                        "/api/members/guest",
-                                        "/api/members/*",
-                                        "/api/members",
-                                        "/api/members/login",
-                                        "/login",
-                                        "/join").permitAll()
-//                        .pathMatchers("/admin/**").hasRole("ADMIN")
-//                        .pathMatchers("/my-page/**").hasAuthority("ROLE_USER")
-
+                                        "/healthcheck").permitAll()
                                 .anyExchange().authenticated()
                 );
 
@@ -128,6 +120,7 @@ public class WebSecurityConfig {
                 .jwtDecoder(jwtDecoder)
                 .jwtAuthenticationConverter(jwtAuthenticationConverter)
         ));
+
         http.csrf(CsrfSpec::disable);
         return http.build();
     }

@@ -27,28 +27,29 @@ public class GlobalExceptionHandler {
     private final static String INVALID_REQUEST_MESSAGE = "요청이 잘못됐습니다.";
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> handleIllegalArgumentException(IllegalArgumentException e) {
+    public Mono<ResponseEntity<String>> handleIllegalArgumentException(IllegalArgumentException e) {
         log.trace(e.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(e.getMessage());
+        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage()));
     }
 
     @ExceptionHandler(AuthorizationDeniedException.class)
-    public ResponseEntity<String> handleAuthorizationDeniedException(
+    public Mono<ResponseEntity<String>> handleAuthorizationDeniedException(
             AuthorizationDeniedException e) {
         log.trace(e.getMessage());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body("Unauthorized");
+        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body("Unauthorized"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException e) {
+    public Mono<ResponseEntity<String>> handleValidationException(MethodArgumentNotValidException e) {
         log.trace(e.getMessage());
-        return ResponseEntity.badRequest().body(INVALID_REQUEST_MESSAGE);
+        return Mono.just(ResponseEntity.badRequest().body(INVALID_REQUEST_MESSAGE));
     }
 
     @ExceptionHandler(Exception.class)
-    public void handleException(Exception e) {
+    public Mono<ResponseEntity<String>> handleException(Exception e) {
         log.error("[ERROR] {}", e.getMessage(), e);
+        return Mono.just(ResponseEntity.internalServerError().build());
     }
 }
