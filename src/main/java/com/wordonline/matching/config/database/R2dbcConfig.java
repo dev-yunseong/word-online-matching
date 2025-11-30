@@ -29,7 +29,9 @@ public class R2dbcConfig extends AbstractR2dbcConfiguration {
         return new R2dbcCustomConversions(CustomConversions.StoreConversions.NONE,
                 Arrays.asList(
                         new UserStatusReadConverter(),
-                        new UserStatusWriteConverter()
+                        new UserStatusWriteConverter(),
+                        new DecoTypeReadConverter(),
+                        new DecoTypeWriteConverter()
                 ));
     }
 }
