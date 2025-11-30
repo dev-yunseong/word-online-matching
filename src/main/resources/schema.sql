@@ -9,3 +9,5 @@ CREATE TABLE user_decorations (
     user_id BIGINT,
     decoration_id BIGINT REFERENCES decorations(id)
 );
+
+ALTER TABLE user_decorations ADD COLUMN is_equipped BOOLEAN DEFAULT FALSE;

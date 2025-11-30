@@ -18,4 +18,5 @@ public class UserDecoration {
 
     private Long userId;
     private Long decorationId;
+    private Boolean isEquipped = false;
 }

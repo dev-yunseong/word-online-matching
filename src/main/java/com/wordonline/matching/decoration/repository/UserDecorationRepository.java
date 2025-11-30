@@ -1,9 +1,41 @@
 package com.wordonline.matching.decoration.repository;
 
+import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.data.repository.query.Param;
 
+import com.wordonline.matching.decoration.entity.DecoType;
 import com.wordonline.matching.decoration.entity.UserDecoration;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public interface UserDecorationRepository extends R2dbcRepository<UserDecoration, Long> {
 
+    Mono<Boolean> existsByUserId(Long userId);
+
+    Flux<UserDecoration> findAllByUserId(long memberId);
+    Flux<UserDecoration> findAllByUserIdAndIsEquipped(long memberId, boolean isEquipped);
+
+    Mono<UserDecoration> findByUserIdAndDecorationId(long memberId, long decorationId);
+
+    @Query("""
+UPDATE user_decorations ud
+SET is_equipped = FALSE
+FROM decorations d
+WHERE ud.decoration_id = d.id
+  AND ud.user_id = :memberId
+  AND d.deco_type = :decoType
+""")
+    Mono<Void> resetIsEquippedByMemberIdAndDecoType(@Param("memberId") long memberId, @Param("decoType") DecoType decoType);
+
+    @Query("""
+UPDATE user_decorations
+SET is_equipped = TRUE
+WHERE user_id = :memberId AND decoration_id = :decorationId
+""")
+    Mono<Void> setIsEquippedByMemberIdAndDecorationId(
+            @Param("memberId") long memberId,
+            @Param("decorationId") long decorationId
+    );
 }
