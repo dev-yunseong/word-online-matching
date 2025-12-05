@@ -1,5 +1,7 @@
 package com.wordonline.matching.matching.service;
 
+import java.util.Random;
+
 import org.springframework.stereotype.Component;
 
 import com.wordonline.matching.matching.dto.AccountMemberResponseDto;
@@ -8,6 +10,12 @@ import reactor.core.publisher.Mono;
 
 @Component
 public class BotMemberMaker {
+
+    private static final Random random = new Random();
+
+    public long getRandomBotMemberId() {
+        return -1L * (random.nextInt(2) + 1);
+    }
 
     public Mono<AccountMemberResponseDto> getBot(long botId) {
         String name = switch ((int) botId) {

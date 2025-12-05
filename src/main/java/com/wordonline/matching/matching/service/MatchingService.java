@@ -32,6 +32,7 @@ public class MatchingService {
     private final DeckService deckService;
     private final UserService userService;
     private final GameSessionService gameSessionService;
+    private final BotMemberMaker botMemberMaker;
 
     public int getQueueLength() {
         return matchingQueue.size();
@@ -135,7 +136,7 @@ public class MatchingService {
 
     public Mono<Boolean> matchPractice(long userId) {
         return Mono.empty()
-                .then(createSession(sessionIdCounter.incrementAndGet(), userId, getBotId()))
+                .then(createSession(sessionIdCounter.incrementAndGet(), userId, botMemberMaker.getRandomBotMemberId()))
                 .map(isSuccess -> {
                     log.info("[Practice] Trying to create session {}", isSuccess);
                     return isSuccess;
@@ -144,12 +145,6 @@ public class MatchingService {
                     log.error("Failed to match practice", e);
                     return Mono.just(false);
                 });
-    }
-
-    private long getBotId() {
-        Random random = new Random();
-        long value = -1L * (random.nextInt(2) + 1); // -1, -2, -3
-        return value;
     }
 
     private Mono<Boolean> createSession(long sessionId, long uid1, long uid2) {
