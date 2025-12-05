@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.Queue;
+import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -134,7 +135,7 @@ public class MatchingService {
 
     public Mono<Boolean> matchPractice(long userId) {
         return Mono.empty()
-                .then(createSession(sessionIdCounter.incrementAndGet(), userId, -1))
+                .then(createSession(sessionIdCounter.incrementAndGet(), userId, getBotId()))
                 .map(isSuccess -> {
                     log.info("[Practice] Trying to create session {}", isSuccess);
                     return isSuccess;
@@ -143,6 +144,12 @@ public class MatchingService {
                     log.error("Failed to match practice", e);
                     return Mono.just(false);
                 });
+    }
+
+    private long getBotId() {
+        Random random = new Random();
+        long value = -1L * (random.nextInt(2) + 1); // -1, -2, -3
+        return value;
     }
 
     private Mono<Boolean> createSession(long sessionId, long uid1, long uid2) {
