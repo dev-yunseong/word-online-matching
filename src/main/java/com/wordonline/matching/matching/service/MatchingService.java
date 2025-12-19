@@ -42,25 +42,21 @@ public class MatchingService {
     }
 
     public Flux<Object> requestMatching(long userId) {
-        Flux<Object> userFlux = serverEventService.subscribe(userId);
+        Mono<Object> enqueueProcess = enqueue(userId)
+                .flatMap(isSuccess -> {
+                    if (isSuccess) {
+                        log.info("[Queue] Successfully Enqueued user id: {}", userId);
+                        return serverEventService.send(userId, new SimpleMessageDto("Successfully Enqueued"));
+                    } else {
+                        log.info("[Queue] Failed to enqueue user id: {}", userId);
+                        return serverEventService.send(userId, new SimpleMessageDto("Failed to enqueue user"))
+                                .then(serverEventService.unsubscribe(userId))
+                                .then(Mono.empty());
+                    }
+                });
 
-        enqueue(userId)
-                .flatMap(isSuccess ->
-                     Mono.delay(Duration.ofSeconds(1)).flatMap(i -> {
-                        if (isSuccess) {
-                            log.info("[Queue] Successfully Enqueued user id: {}", userId);
-                            return serverEventService.send(userId,
-                                    new SimpleMessageDto("Successfully Enqueued"));
-                        } else {
-                            log.info("[Queue] Failed to enqueue user id: {}", userId);
-                            return serverEventService.send(userId,
-                                            new SimpleMessageDto("Failed to enqueue user"))
-                                    .then(serverEventService.unsubscribe(userId));
-                        }
-                    }))
-                .subscribe();
-
-        return userFlux;
+        return serverEventService.subscribe(userId)
+                .mergeWith(enqueueProcess);
     }
 
     public Flux<Object> requestPractice(long userId) {
