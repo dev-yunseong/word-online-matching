@@ -42,35 +42,30 @@ public class MatchingService {
     }
 
     public Flux<Object> requestMatching(long userId) {
-        Mono<Object> enqueueProcess = enqueue(userId)
-                .flatMap(isSuccess -> {
+        return enqueue(userId)
+                .flatMapMany(isSuccess -> {
                     if (isSuccess) {
-                        log.info("[Queue] Successfully Enqueued user id: {}", userId);
-                        return serverEventService.send(userId, new SimpleMessageDto("Successfully Enqueued"));
+                        return Flux.<Object>just(new SimpleMessageDto("Successfully Enqueued"))
+                                .concatWith(serverEventService.subscribe(userId));
                     } else {
-                        log.info("[Queue] Failed to enqueue user id: {}", userId);
-                        return serverEventService.send(userId, new SimpleMessageDto("Failed to enqueue user"))
-                                .then(serverEventService.unsubscribe(userId))
-                                .then(Mono.empty());
+                        return Flux.just(new SimpleMessageDto("Failed to enqueue user"));
                     }
                 });
-
-        return serverEventService.subscribe(userId)
-                .mergeWith(enqueueProcess);
     }
 
     public Flux<Object> requestPractice(long userId) {
+
+        Flux<Object> userFlux = serverEventService.subscribe(userId);
+
         matchingQueue.remove(userId);
 
-        Mono<Object> practiceProcess = Mono.defer(() -> {
-            log.info("[Practice] Successfully Enqueued user id: {}", userId);
+        Mono.empty()
+                .then(Mono.delay(Duration.ofSeconds(1))
+                .then(matchPractice(userId)))
+                .subscribe();
 
-            return serverEventService.send(userId, new SimpleMessageDto("Successfully Enqueued"))
-                    .then(matchPractice(userId));
-        });
-
-        return serverEventService.subscribe(userId)
-                .mergeWith(practiceProcess);
+        return Flux.<Object>just(new SimpleMessageDto("Successfully Enqueued"))
+                .concatWith(userFlux);
     }
 
     private Mono<Boolean> enqueue(long userId) {
@@ -155,10 +150,7 @@ public class MatchingService {
                     return Mono.zip(
                                     serverEventService.send(uid1, matchedInfoDto),
                                     serverEventService.send(uid2, matchedInfoDto))
-                            .map(tuple -> {
-                                log.info("[Session] Session created: uid1: {}, uid2: {}", tuple.getT1(),  tuple.getT2());
-                                return 0;
-                            }).thenReturn(true);
+                            .thenReturn(true);
                 })
                 .onErrorResume(e -> {
                             log.error("Failed to create session", e);
