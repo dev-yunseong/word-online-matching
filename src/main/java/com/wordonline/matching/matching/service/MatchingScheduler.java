@@ -22,7 +22,7 @@ public class MatchingScheduler {
 
     @PostConstruct
     public void init() {
-        scheduler = Flux.interval(Duration.ofSeconds(5))
+        scheduler = Flux.interval(Duration.ofSeconds(2))
                 .flatMap(t -> tryMatch())
                 .subscribe();
     }
