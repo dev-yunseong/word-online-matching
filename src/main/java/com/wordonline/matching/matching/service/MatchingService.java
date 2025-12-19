@@ -79,10 +79,10 @@ public class MatchingService {
                     if (!has) {
                         return Mono.error(new IllegalStateException("Deck has no selected"));
                     }
-                    matchingQueue.add(userId);
+                    if (!isInQueue(userId))
+                        matchingQueue.add(userId);
                     return Mono.just(true);
-                })
-                .onErrorResume(e -> {
+                }).onErrorResume(e -> {
                             log.warn("매칭 불가 상태: {} -> {}", userId, e.getMessage());
                             return userService.markOnline(userId)
                                     .thenReturn(false);
