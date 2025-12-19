@@ -46,7 +46,7 @@ public class MatchingService {
                 .flatMapMany(isSuccess -> {
                     if (isSuccess) {
                         return Flux.<Object>just(new SimpleMessageDto("Successfully Enqueued"))
-                                .concatWith(serverEventService.subscribe(userId));
+                                .mergeWith(serverEventService.subscribe(userId));
                     } else {
                         return Flux.just(new SimpleMessageDto("Failed to enqueue user"));
                     }
@@ -65,7 +65,7 @@ public class MatchingService {
                 .subscribe();
 
         return Flux.<Object>just(new SimpleMessageDto("Successfully Enqueued"))
-                .concatWith(userFlux);
+                .mergeWith(userFlux);
     }
 
     private Mono<Boolean> enqueue(long userId) {
