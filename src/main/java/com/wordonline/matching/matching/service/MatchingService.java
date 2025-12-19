@@ -60,17 +60,17 @@ public class MatchingService {
     }
 
     public Flux<Object> requestPractice(long userId) {
-        Flux<Object> userFlux = serverEventService.subscribe(userId);
         matchingQueue.remove(userId);
-        Mono.empty()
-                .then(Mono.delay(Duration.ofSeconds(1)).flatMap(i -> {
-                            log.info("[Practice] Successfully Enqueued user id: {}", userId);
-                            return serverEventService.send(userId,
-                                    new SimpleMessageDto("Successfully Enqueued"));
-                }).then(matchPractice(userId)))
-                .subscribe();
 
-        return userFlux;
+        Mono<Object> practiceProcess = Mono.defer(() -> {
+            log.info("[Practice] Successfully Enqueued user id: {}", userId);
+
+            return serverEventService.send(userId, new SimpleMessageDto("Successfully Enqueued"))
+                    .then(matchPractice(userId));
+        });
+
+        return serverEventService.subscribe(userId)
+                .mergeWith(practiceProcess);
     }
 
     private Mono<Boolean> enqueue(long userId) {
