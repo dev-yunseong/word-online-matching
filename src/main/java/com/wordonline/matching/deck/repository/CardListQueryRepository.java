@@ -27,9 +27,9 @@ select
     else null
   end as "progressText"
 from cards c
-join users u on u.id = :userId
-left join user_cards uc
-  on uc.user_id = :userId and uc.card_id = c.id
+join user_cards uc on c.id = uc.card_id
+join user u on uc.user_id = u.id
+where u.id = :userId
 order by c.id
 """)
     Flux<MyCardListRow> findMyCardList(long userId);
