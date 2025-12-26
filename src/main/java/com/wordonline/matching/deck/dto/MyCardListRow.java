@@ -1,11 +1,11 @@
 package com.wordonline.matching.deck.dto;
 
-public interface MyCardListRow {
-    Long getId();
-    String getName();
-    String getType();
-    Integer getCount();
-    Boolean getUnlocked();
-    String getUnlockText();
-    String getProgressText();
-}
+public record MyCardListRow(
+        Long id,
+        String name,
+        String type,
+        int count,
+        boolean unlocked,
+        String unlockText,
+        String progressText
+) {}

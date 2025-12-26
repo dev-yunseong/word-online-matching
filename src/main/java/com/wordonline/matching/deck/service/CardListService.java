@@ -17,15 +17,17 @@ public class CardListService {
 
     public Mono<CardListResponse> getMyCards(long userId) {
         return repo.findMyCardList(userId)
-                .map(r -> new CardListItem(
-                        r.getId(),
-                        r.getName(),
-                        r.getType(),
-                        r.getCount() == null ? 0 : r.getCount(),
-                        Boolean.TRUE.equals(r.getUnlocked()),
-                        r.getUnlockText(),
-                        r.getProgressText()
-                ))
+                .map(r -> {
+                    return new CardListItem(
+                            r.id(),
+                            r.name(),
+                            r.type(),
+                            r.count(),
+                            r.unlocked(),
+                            r.unlockText(),
+                            r.progressText()
+                    );
+                })
                 .collectList()
                 .map(CardListResponse::new);
     }

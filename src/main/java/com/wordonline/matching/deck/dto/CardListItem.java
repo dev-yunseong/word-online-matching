@@ -1,7 +1,5 @@
 package com.wordonline.matching.deck.dto;
 
-import java.util.List;
-
 public record CardListItem(
         long id,
         String name,
