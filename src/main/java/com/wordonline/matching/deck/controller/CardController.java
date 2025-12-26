@@ -17,7 +17,7 @@ public class CardController {
         this.cardListService = cardListService;
     }
 
-    @GetMapping("/api/users/mine/cards")
+    @GetMapping("/api/users/mine/cardLists")
     public Mono<CardListResponse> getMyCards(@AuthenticationPrincipal Jwt principalDetails) {
         return cardListService.getMyCards(principalDetails.getClaim("memberId"));
     }
