@@ -11,21 +11,21 @@ public interface CardListQueryRepository extends R2dbcRepository<Card, Long> {
 
     @Query("""
 select
-  c.id as id,
-  c.name as name,
-  c.card_type::text as type,
-  coalesce(uc.count, 0) as count,
-  (uc.card_id is not null) as unlocked,
+  c.id as "id",
+  c.name as "name",
+  c.card_type::text as "type",
+  coalesce(uc.count, 0) as "count",
+  (uc.card_id is not null) as "unlocked",
   case
     when uc.card_id is null and c.unlock_condition_type = 'WIN_COUNT'
       then (c.unlock_required_value::text || '승')
     else null
-  end as unlock_text,
+  end as "unlockText",
   case
     when uc.card_id is null and c.unlock_condition_type = 'WIN_COUNT'
       then (least(u.total_wins, c.unlock_required_value)::text || '/' || c.unlock_required_value::text)
     else null
-  end as progress_text
+  end as "progressText"
 from cards c
 join users u on u.id = :userId
 left join user_cards uc
