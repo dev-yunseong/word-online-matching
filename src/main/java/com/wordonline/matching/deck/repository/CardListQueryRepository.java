@@ -20,12 +20,12 @@ select
     when uc.card_id is null and c.unlock_condition_type = 'WIN_COUNT'
       then (c.unlock_required_value::text || '승')
     else null
-  end as "unlockText",
+  end as "unlock_text",
   case
     when uc.card_id is null and c.unlock_condition_type = 'WIN_COUNT'
       then (least(u.total_wins, c.unlock_required_value)::text || '/' || c.unlock_required_value::text)
     else null
-  end as "progressText"
+  end as "progress_text"
 from cards c
 join users u on u.id = :userId
 left join user_cards uc
