@@ -11,3 +11,20 @@ CREATE TABLE user_decorations (
 );
 
 ALTER TABLE user_decorations ADD COLUMN is_equipped BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE cards
+    ADD COLUMN IF NOT EXISTS unlock_condition_type VARCHAR(31),
+    ADD COLUMN IF NOT EXISTS unlock_required_value INT;
+
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS total_wins INT NOT NULL DEFAULT 0;
+
+UPDATE cards
+SET unlock_condition_type = 'WIN_COUNT',
+    unlock_required_value = 5
+WHERE name = 'Wind';
+
+UPDATE cards
+SET unlock_condition_type = 'WIN_COUNT',
+    unlock_required_value = 10
+WHERE name = 'Drop';

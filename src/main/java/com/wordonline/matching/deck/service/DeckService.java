@@ -46,17 +46,15 @@ public class DeckService {
     private final DeckDataService deckDataService;
 
     public Mono<Long> initializeCard(long userId) {
-        return giveAllCard(userId).then(
+        return giveStarterCard(userId).then(
                 giveDefaultDeck(userId));
     }
 
-    private Mono<Void> giveAllCard(long userId) {
+    private Mono<Void> giveStarterCard(long userId) {
         return deckDataService.getAllCard()
                 .flatMapMany(Flux::fromIterable)
-                .flatMap(card -> {
-                    UserCard userCard = new UserCard(userId, card.getId(), 3);
-                    return userCardRepository.save(userCard);
-                })
+                .filter(card -> card.getId() >= 1 && card.getId() <= 9)
+                .flatMap(card -> userCardRepository.save(new UserCard(userId, card.getId(), 3)))
                 .then();
     }
 
@@ -87,11 +85,14 @@ public class DeckService {
                     String defaultName = localizationService.getMessage(localeContext, "string.default.deck");
                     return Mono.just(new Deck(userId, defaultName));
                 }).flatMap(deckRepository::save)
-                .flatMap(deck -> Flux.range(1, 10)
-                        .flatMap(i -> {
-                            DeckCard deckCard = new DeckCard(deck.getId(), (long) i, 1);
-                            return deckCardRepository.save(deckCard);
-                        }).then(Mono.just(deck)))
+                .flatMap(deck ->
+                        Flux.concat(
+                                        Flux.range(1, 9).map(Integer::longValue),
+                                        Mono.just(6L)
+                                )
+                                .flatMap(cardId -> deckCardRepository.save(new DeckCard(deck.getId(), cardId, 1)))
+                                .then(Mono.just(deck))
+                )
                 .flatMap(deck -> userRepository.updateSelectedDeck(userId, deck.getId())
                         .then(Mono.just(deck.getId())));
     }
