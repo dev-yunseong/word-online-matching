@@ -86,15 +86,18 @@ public class DeckService {
                     return Mono.just(new Deck(userId, defaultName));
                 }).flatMap(deckRepository::save)
                 .flatMap(deck ->
-                        Flux.concat(
-                                        Flux.range(1, 9).map(Integer::longValue),
-                                        Mono.just(6L)
-                                )
-                                .flatMap(cardId -> deckCardRepository.save(new DeckCard(deck.getId(), cardId, 1)))
+                        Flux.range(1, 9)
+                                .map(Integer::longValue)
+                                .flatMap(cardId -> {
+                                    int count = (cardId == 6L) ? 2 : 1;
+                                    return deckCardRepository.save(new DeckCard(deck.getId(), cardId, count));
+                                })
                                 .then(Mono.just(deck))
                 )
-                .flatMap(deck -> userRepository.updateSelectedDeck(userId, deck.getId())
-                        .then(Mono.just(deck.getId())));
+                .flatMap(deck ->
+                        userRepository.updateSelectedDeck(userId, deck.getId())
+                                .then(Mono.just(deck.getId()))
+                );
     }
 
     public Mono<DeckResponseDto> saveDeck(long userId, DeckRequestDto deckRequestDto) {
