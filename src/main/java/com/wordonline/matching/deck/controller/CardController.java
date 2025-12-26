@@ -18,7 +18,8 @@ public class CardController {
     }
 
     @GetMapping("/api/users/mine/cardLists")
-    public Mono<CardListResponse> getMyCards(@AuthenticationPrincipal Jwt principalDetails) {
-        return cardListService.getMyCards(principalDetails.getClaim("memberId"));
+    public Mono<CardListResponse> getMyCards(@AuthenticationPrincipal Jwt jwt) {
+        var userId = Long.parseLong(jwt.getClaimAsString("memberId"));
+        return cardListService.getMyCards(userId);
     }
 }
