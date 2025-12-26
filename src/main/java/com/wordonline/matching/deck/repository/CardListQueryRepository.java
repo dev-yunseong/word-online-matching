@@ -1,11 +1,13 @@
 package com.wordonline.matching.deck.repository;
 
+import com.wordonline.matching.deck.domain.Card;
 import com.wordonline.matching.deck.dto.MyCardListRow;
 import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.data.repository.Repository;
 import reactor.core.publisher.Flux;
 
-public interface CardListQueryRepository extends Repository<Object, Long> {
+public interface CardListQueryRepository extends R2dbcRepository<Card, Long> {
 
     @Query("""
 select
