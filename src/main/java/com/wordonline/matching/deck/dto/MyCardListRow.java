@@ -1,4 +1,4 @@
-﻿package com.wordonline.matching.deck.dto;
+package com.wordonline.matching.deck.dto;
 
 public interface MyCardListRow {
     Long getId();
